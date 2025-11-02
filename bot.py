@@ -1,4 +1,4 @@
-# bot.py — стабильная версия с поддержкой Telegra.ph + fallback в чат
+# bot.py — стабильная версия с поддержкой Telegra.ph (через внешние ссылки) + fallback в чат
 import os
 import json
 import asyncio
@@ -23,6 +23,7 @@ except Exception:
 # --- Константы / настройки ---
 COMICS_AUTHOR_NAME = "EasyReaderBot"
 DATA_JSON = "data.json"
+LINKS_JSON = "links.json" 
 COMICS_DIR = Path("comics")
 PROGRESS_FILE = "progress.json"
 
@@ -49,6 +50,14 @@ else:
     with open(DATA_JSON, "r", encoding="utf-8") as f:
         comics_data = json.load(f)
 
+# Загружаем links.json (внешние ссылки)
+if not Path(LINKS_JSON).exists():
+    print(f"⚠️ {LINKS_JSON} не найден. Telegra.ph не будет работать.")
+    comics_links = {}
+else:
+    with open(LINKS_JSON, "r", encoding="utf-8") as f:
+        comics_links = json.load(f)
+# -----------------------
 
 # -----------------------
 # Вспомогательные функции
@@ -58,6 +67,9 @@ def get_chapter_folder(comic_key: str, chapter_key: str) -> Path:
 
 
 def list_pages(folder: Path):
+    """
+    Возвращает список локальных страниц (для режима 'Читать в чате').
+    """
     if not folder.exists():
         return []
     files = sorted([
@@ -122,7 +134,7 @@ async def chapter_menu(callback: types.CallbackQuery):
     )
 
 
-# --- Чтение через Telegraph ---
+# --- Чтение через Telegraph (исправлено на внешние ссылки) ---
 telegraph = None
 
 
@@ -130,12 +142,19 @@ telegraph = None
 async def read_via_telegraph(callback: types.CallbackQuery):
     await callback.answer("⏳ Подготавливаю страницу Telegra.ph...")
     _, comic_key, chapter_key = callback.data.split(":", 2)
-    folder = get_chapter_folder(comic_key, chapter_key)
-    pages = list_pages(folder)
-    if not pages:
-        await callback.message.answer("⚠️ В этой главе нет изображений.")
+    
+    # Пытаемся получить внешние ссылки из comics_links
+    try:
+        # comics_links имеет структуру: {"comic_key": {"chapter_key": [url1, url2, ...]}}
+        image_links = comics_links[comic_key][chapter_key]
+    except KeyError:
+        await callback.message.answer("⚠️ Внешние ссылки для этой главы не найдены в links.json. Пожалуйста, убедитесь, что links.json настроен правильно.")
         return
 
+    if not image_links:
+        await callback.message.answer("⚠️ В этой главе нет внешних ссылок на изображения в links.json.")
+        return
+    
     global telegraph
     if telegraph is None:
         try:
@@ -145,46 +164,56 @@ async def read_via_telegraph(callback: types.CallbackQuery):
             telegraph = None
 
     if telegraph is None:
-        await callback.message.answer("⚠️ Telegra.ph недоступен. Переключаю на чтение в чате.")
-        return await send_first_page_in_chat(callback, comic_key, chapter_key, pages)
+        await callback.message.answer("⚠️ Telegra.ph недоступен.")
+        return
 
-    page_paths = [str(folder / p) for p in pages]
-
-    try:
-        telegraph_links = await telegraph.upload(page_paths)
-    except Exception as e:
-        print(f"[Telegraph upload error] {e}")
-        await callback.message.answer("⚠️ Не удалось загрузить на Telegra.ph. Переключаю на чтение в чате.")
-        return await send_first_page_in_chat(callback, comic_key, chapter_key, pages)
-
-    content_html = "".join(f'<figure><img src="{link}"></figure>' for link in telegraph_links)
+    # Используем image_links напрямую для создания HTML-контента
+    content_html = "".join(f'<figure><img src="{link}"></figure>' for link in image_links)
+    
     try:
         page = await telegraph.create_page(
             title=f"{comics_data.get(comic_key,{}).get('title','Комикс')} — {comics_data.get(comic_key,{}).get('chapters',{}).get(chapter_key,'Глава')}",
             author_name=COMICS_AUTHOR_NAME,
             html_content=content_html
         )
+        
+        # --- НОВЫЙ БЛОК ПРОВЕРКИ ---
+        if isinstance(page, dict) and 'error' in page:
+             error_message = page.get('error', 'Неизвестная ошибка Telegra.ph API')
+             print(f"[Telegraph create_page API error] {error_message}")
+             await callback.message.answer(f"⚠️ Не удалось создать страницу на Telegra.ph: {error_message}")
+             return
+        # --- КОНЕЦ НОВОГО БЛОКА ПРОВЕРКИ ---
+
     except Exception as e:
-        print(f"[Telegraph create_page error] {e}")
-        await callback.message.answer("⚠️ Не удалось создать страницу на Telegra.ph. Переключаю на чтение в чате.")
-        return await send_first_page_in_chat(callback, comic_key, chapter_key, pages)
+        print(f"[Telegraph create_page Exception] {e}")
+        await callback.message.answer(f"⚠️ Не удалось создать страницу на Telegra.ph (Исключение): {e}")
+        return
 
     builder = InlineKeyboardBuilder()
-    builder.button(text="📖 Читать онлайн", url=page.url)
+    # ИСПРАВЛЕНО: Доступ по ключу (page['url']) вместо доступа по атрибуту (page.url)
+    builder.button(text="📖 Читать онлайн", url=page['url']) 
+    # Предлагаем fallback на чтение в чате, если пользователь предпочитает его
     builder.button(text="💬 Читать в чате", callback_data=f"read_chat:{comic_key}:{chapter_key}")
     builder.button(text="🔙 К главам", callback_data=f"comic:{comic_key}")
     builder.adjust(1)
-    await callback.message.answer(f"✅ Страница готова: <b>{page.title}</b>", reply_markup=builder.as_markup())
+    # ИСПРАВЛЕНО: Доступ по ключу (page['title']) вместо доступа по атрибуту (page.title)
+    await callback.message.answer(f"✅ Страница готова: <b>{page['title']}</b>", reply_markup=builder.as_markup()) 
     try:
         await callback.message.delete()
     except Exception:
         pass
 
 
-# --- Отправка первой страницы в чат + навигация ---
+# --- Отправка первой страницы в чат + навигация (использует локальные файлы) ---
 async def send_first_page_in_chat(callback: types.CallbackQuery, comic_key: str, chapter_key: str, pages: list):
     page_num = 0
     folder = get_chapter_folder(comic_key, chapter_key)
+    # Проверка на существование файла перед созданием FSInputFile
+    if not (folder / pages[page_num]).exists():
+        await callback.message.answer(f"⚠️ Локальный файл {pages[page_num]} не найден. Убедитесь, что папка 'comics' настроена.")
+        return
+        
     page_path = folder / pages[page_num]
     caption = (
         f"{comics_data.get(comic_key,{}).get('title','Комикс')} — "
@@ -211,7 +240,7 @@ async def read_chat(callback: types.CallbackQuery):
     folder = get_chapter_folder(comic_key, chapter_key)
     pages = list_pages(folder)
     if not pages:
-        await callback.message.answer("⚠️ В этой главе нет изображений.")
+        await callback.message.answer("⚠️ В этой главе нет локальных изображений. Убедитесь, что папка 'comics' настроена.")
         return
     return await send_first_page_in_chat(callback, comic_key, chapter_key, pages)
 
@@ -224,11 +253,16 @@ async def page_navigation(callback: types.CallbackQuery):
     folder = get_chapter_folder(comic_key, chapter_key)
     pages = list_pages(folder)
     if not pages:
-        await callback.message.answer("⚠️ В этой главе нет изображений.")
+        await callback.message.answer("⚠️ В этой главе нет локальных изображений.")
         return
 
     if page_num < 0 or page_num >= len(pages):
         await callback.message.answer("⚠️ Неверный номер страницы.")
+        return
+        
+    # Проверка на существование файла перед созданием FSInputFile
+    if not (folder / pages[page_num]).exists():
+        await callback.message.answer(f"⚠️ Локальный файл {pages[page_num]} не найден.")
         return
 
     page_path = folder / pages[page_num]
@@ -247,7 +281,12 @@ async def page_navigation(callback: types.CallbackQuery):
     builder.button(text="🔙 К главам", callback_data=f"comic:{comic_key}")
     builder.adjust(2)
 
+    # Используем answer_photo вместо edit_message_media
     await callback.message.answer_photo(photo=photo, caption=caption, reply_markup=builder.as_markup())
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
 
 
 # -----------------------
@@ -259,14 +298,16 @@ async def main():
         try:
             telegraph = Telegraph()
             try:
+                # Попытка создания/авторизации аккаунта Telegra.ph
                 await telegraph.create_account(short_name=COMICS_AUTHOR_NAME)
             except Exception:
                 pass
-            print("✅ Telegraph готов.")
+            print("✅ Telegraph готов (для внешних ссылок).")
         except Exception as e:
             print(f"⚠️ Telegraph init failed: {e}")
             telegraph = None
     else:
+        # Если в .env TELEGRAPH_ENABLED='0' или библиотека недоступна
         print("ℹ️ Telegraph не доступен/отключён, работаем в режиме 'чтение в чате'")
 
     print("🤖 Бот запущен.")
