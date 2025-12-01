@@ -2,3 +2,5 @@ aiogram==3.10.0
 python-dotenv
 telegraph
 aiofiles
+apscheduler
+pytz
