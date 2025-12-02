@@ -623,7 +623,7 @@ async def open_chapters_handler(callback: types.CallbackQuery, callback_data: Co
 
 
 @dp.callback_query(ComicCallback.filter(F.action == "read"))
-async async def read_chapter_handler(callback: types.CallbackQuery, callback_data: ComicCallback):
+async def read_chapter_handler(callback: types.CallbackQuery, callback_data: ComicCallback):
     collection_key = callback_data.collection_key
     comic_key = callback_data.comic_key
     
