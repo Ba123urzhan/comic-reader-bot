@@ -5,7 +5,7 @@ import json
 import asyncio
 import re
 import math
-import random # <--- НОВЫЙ ИМПОРТ: для рандомайзера
+import random 
 from pathlib import Path
 from typing import Optional, List, Any
 from pytz import timezone
@@ -623,7 +623,7 @@ async def open_chapters_handler(callback: types.CallbackQuery, callback_data: Co
 
 
 @dp.callback_query(ComicCallback.filter(F.action == "read"))
-async def read_chapter_handler(callback: types.CallbackQuery, callback_data: ComicCallback):
+async async def read_chapter_handler(callback: types.CallbackQuery, callback_data: ComicCallback):
     collection_key = callback_data.collection_key
     comic_key = callback_data.comic_key
     
@@ -652,7 +652,7 @@ async def read_chapter_handler(callback: types.CallbackQuery, callback_data: Com
         await callback.answer("❌ Ссылки для этой главы не найдены.", show_alert=True)
         return
 
-    # получаем telegraph из workflow_data
+    # Получаем telegraph из workflow_data
     telegraph = dp.workflow_data.get("telegraph")
 
     # 3. Создаем страницу Telegra.ph (если включен и доступен)
@@ -660,9 +660,9 @@ async def read_chapter_handler(callback: types.CallbackQuery, callback_data: Com
         # Улучшено: показываем пользователю, что ждём
         await callback.answer("⏳ Создаю страницу Telegra.ph. Это может занять несколько секунд...", show_alert=False) 
         
-        # --- Клавиатура для Telegra.ph ---
-        markup = InlineKeyboardBuilder()
-        markup.row(
+        # --- Клавиатура для Telegra.ph (используется как fallback) ---
+        markup_back_to_chapters = InlineKeyboardBuilder()
+        markup_back_to_chapters.row(
             types.InlineKeyboardButton(
                 text=f"⬅️ К главам: {comic_title}",
                 callback_data=ComicCallback(collection_key=collection_key, comic_key=comic_key, action="open", page=1).pack(),
@@ -683,8 +683,7 @@ async def read_chapter_handler(callback: types.CallbackQuery, callback_data: Com
             
             page_url = response.get("url")
             if page_url:
-                # --- ИСПРАВЛЕННЫЙ БЛОК: КРАСИВОЕ ОФОРМЛЕНИЕ ССЫЛКИ ---
-                link_text = html.link(f"📚 {comic_title} - {chapter_title} (Открыть)", page_url)
+                # УСПЕХ: Отправляем ссылку на Telegra.ph
                 
                 # Добавляем кнопку "Перейти к главе"
                 markup_link = InlineKeyboardBuilder()
@@ -706,7 +705,6 @@ async def read_chapter_handler(callback: types.CallbackQuery, callback_data: Com
                     parse_mode=ParseMode.MARKDOWN, # Возвращаем MARKDOWN для выделения жирным
                     reply_markup=markup_link.as_markup(),
                 )
-                # --- КОНЕЦ ИСПРАВЛЕННОГО БЛОКА ---
                 return
         except Exception as e:
             if tg_exceptions and isinstance(e, tg_exceptions.TelegraphException):
@@ -715,43 +713,34 @@ async def read_chapter_handler(callback: types.CallbackQuery, callback_data: Com
                 error_message = f"Неизвестная ошибка: {e}"
             print(f"⚠️ Ошибка создания страницы Telegra.ph для {chapter_title}: {error_message}")
 
-            # Запасной вариант: отправляем прямые ссылки
-            try:
-                await callback.message.edit_text(
-                    f"⚠️ **Не удалось создать страницу Telegra.ph** для главы **{chapter_title}**.\n"
-                    f"Причина: `Ошибка Telegra.ph`.\n"
-                    f"Ниже — прямые ссылки на изображения.",
-                    parse_mode=ParseMode.MARKDOWN,
-                    reply_markup=markup.as_markup() # Возвращаем кнопку назад
-                )
-            except Exception:
-                pass
-
-            links_chunk = "\n".join(links_list)
-            await callback.message.answer(f"Прямые ссылки ({len(links_list)} шт.):\n{links_chunk}", disable_web_page_preview=True)
+            # ОШИБКА TELEGRAPH: Уведомляем об ошибке и возвращаем к главам
+            await callback.message.edit_text(
+                f"❌ **Не удалось создать страницу Telegra.ph** для главы **{chapter_title}**.\n\n"
+                f"Пожалуйста, повторите попытку или выберите другую главу.",
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=markup_back_to_chapters.as_markup() # Возвращаем кнопку назад к главам
+            )
             return
-
-    # Telegra.ph отключен или не удалось — отправляем прямые ссылки
-    markup = InlineKeyboardBuilder()
-    markup.row(
-        types.InlineKeyboardButton(
-            text=f"⬅️ К главам: {comic_title}",
-            callback_data=ComicCallback(collection_key=collection_key, comic_key=comic_key, action="open", page=1).pack(),
+    else:
+        # TELEGRAPH ОТКЛЮЧЕН/НЕДОСТУПЕН
+        
+        # Клавиатура для возврата к главам
+        markup_back_to_chapters = InlineKeyboardBuilder()
+        markup_back_to_chapters.row(
+            types.InlineKeyboardButton(
+                text=f"⬅️ К главам: {comic_title}",
+                callback_data=ComicCallback(collection_key=collection_key, comic_key=comic_key, action="open", page=1).pack(),
+            )
         )
-    )
-    
-    try:
+        
         await callback.message.edit_text(
-            f"📖 **{comic_title} - {chapter_title}**\n\n_Telegra.ph отключен/недоступен_. Вот прямые ссылки на изображения:",
+            f"❌ **{comic_title} - {chapter_title}**\n\n_Telegra.ph отключен или не был инициализирован_.\n\n"
+            "Чтение глав недоступно.",
             parse_mode=ParseMode.MARKDOWN,
-            reply_markup=markup.as_markup()
+            reply_markup=markup_back_to_chapters.as_markup()
         )
-    except Exception:
-        pass
-
-    links_chunk = "\n".join(links_list)
-    await callback.message.answer(links_chunk, disable_web_page_preview=True)
-    await callback.answer()
+        await callback.answer("Чтение недоступно: Telegra.ph отключен.", show_alert=True)
+        return
 
 
 @dp.callback_query(MenuCallback.filter(F.action == "search"))
@@ -875,11 +864,12 @@ async def main():
             else:
                 print(f"⚠️ Неизвестная ошибка при инициализации Telegraph: {e}")
             telegraph = None
-            print("❌ Telegra.ph отключен из-за ошибки инициализации.")
+            print("❌ Telegra.ph отключен из-за ошибки инициализации. **Прямые ссылки отправляться не будут.**")
     else:
         if TELEGRAPH_ENABLED and not TELEGRAPH_AVAILABLE:
-            print("⚠️ Библиотека 'telegraph' не найдена. (ImportError). Установлена синхронная версия.")
-        print("⚠️ Telegra.ph отключен. Ссылки будут отправляться напрямую.")
+            print("⚠️ Библиотека 'telegraph' не найдена. (ImportError). Установлена синхронная версия. **Прямые ссылки отправляться не будут.**")
+        elif not TELEGRAPH_ENABLED:
+            print("⚠️ Telegra.ph отключен в .env. **Прямые ссылки отправляться не будут.**")
 
 
     # Сохраняем объект Telegraph (или None) в диспетчере для доступа из хэндлеров

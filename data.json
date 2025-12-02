@@ -511,6 +511,16 @@
           "chapter_4": "Глава 4",
           "chapter_5": "Глава 5"
         }
+      },
+      "lady_killer": {
+        "title": "Леди Киллер",
+        "chapters": {
+          "chapter_1": "Глава 1",
+          "chapter_2": "Глава 2",
+          "chapter_3": "Глава 3",
+          "chapter_4": "Глава 4",
+          "chapter_5": "Глава 5"
+        }
       }
     }
   }
