@@ -490,6 +490,15 @@
           "chapter_25": "Глава 25",
           "chapter_26": "Глава 26"
         }
+      },
+      "punisher-year-one": {
+        "title": "Каратель: Год Первый",
+        "chapters": {
+          "chapter_1": "Глава 1",
+          "chapter_2": "Глава 2",
+          "chapter_3": "Глава 3",
+          "chapter_4": "Глава 4"
+        }
       }
     }
   },
