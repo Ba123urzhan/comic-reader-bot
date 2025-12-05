@@ -399,9 +399,9 @@ async def get_chapter_buttons_markup(collection_key: str, comic_key: str, page: 
         display_text = title
         if "глава" in title.lower():
              # Пытаемся отобразить только число, если это возможно, для компактности
-            match = re.search(r'\d+', title)
-            if match:
-                display_text = match.group(0)
+             match = re.search(r'\d+', title)
+             if match:
+                 display_text = match.group(0)
 
         builder.button(
             text=display_text, # Компактный вид
@@ -701,7 +701,8 @@ async def read_chapter_handler(callback: types.CallbackQuery, callback_data: Com
                 )
                 
                 await callback.message.edit_text(
-                    f"✅ Глава **{chapter_title}** готова!\n\nНажмите кнопку ниже, чтобы начать чтение.",
+                    # ИСПРАВЛЕНО: УБРАНО ЛИШНЕЕ СЛОВО "ГЛАВА"
+                    f"✅ **{chapter_title}** готова!\n\nНажмите кнопку ниже, чтобы начать чтение.",
                     parse_mode=ParseMode.MARKDOWN, # Возвращаем MARKDOWN для выделения жирным
                     reply_markup=markup_link.as_markup(),
                 )
@@ -824,40 +825,50 @@ async def send_daily_update(bot_obj: Bot):
 
     update_message = (
         "✨ **Ежедневное обновление комиксов!**\n\n"
-        "📖 Не пропустите новые главы в вашей любимой коллекции! Нажмите кнопку ниже, чтобы перейти к чтению."
+        "📖 Не пропустите новые главы в вашей любимой коллекции! На"
+
     )
 
-    markup = await get_collections_markup() # Получаем клавиатуру коллекций, она же ведет в главное меню
+    markup = InlineKeyboardBuilder()
+    markup.row(
+        types.InlineKeyboardButton(
+            text="📚 К Каталогу комиксов", 
+            callback_data=MenuCallback(action="collections").pack()
+        )
+    )
 
     for user_id in users:
         try:
-            await bot_obj.send_message(chat_id=user_id, text=update_message, reply_markup=markup, parse_mode=ParseMode.MARKDOWN)
+            await bot_obj.send_message(
+                user_id,
+                update_message + "жмите кнопку ниже, чтобы перейти к чтению.",
+                reply_markup=markup.as_markup(),
+                parse_mode=ParseMode.MARKDOWN
+            )
+            await asyncio.sleep(0.05) # Небольшая задержка для предотвращения блокировки
         except Exception as e:
-            # Сюда попадаем, если пользователь заблокировал бота
-            print(f"⚠️ Не удалось отправить сообщение пользователю {user_id} (вероятно, заблокировал): {e}")
+            # Игнорируем ошибки, связанные с блокировкой или удалением чата
+            print(f"⚠️ Ошибка отправки обновления пользователю {user_id}: {e}")
+            pass # Продолжаем отправку другим пользователям
 
-    print(f"✅ Ежедневное обновление отправлено {len(users)} подписчикам.")
 
-
-# --- Главная функция запуска ---
-
+# --- Запуск бота ---
 
 async def main():
-    # 1. Планировщик и Telegraph
-    scheduler = AsyncIOScheduler(timezone=TZ_INFO)
-    telegraph: Optional[Any] = None
-
+    # 1. Инициализация Telegraph
+    global TELEGRAPH_AVAILABLE 
+    telegraph = None
     if TELEGRAPH_ENABLED and TELEGRAPH_AVAILABLE:
-        # Инициализация и создание аккаунта с to_thread
-        telegraph_instance = Telegraph() # Создаем синхронный экземпляр
         try:
-            # Запускаем синхронный метод в отдельном потоке
-            await to_thread(
-                telegraph_instance.create_account, 
-                short_name=COMICS_AUTHOR_NAME
+            # Используем to_thread для асинхронного запуска синхронного метода регистрации
+            telegraph = await to_thread(
+                Telegraph, 
+                access_token=os.getenv("TELEGRAPH_TOKEN"),
+                domain="telegra.ph" # Используем основной домен
             )
-            telegraph = telegraph_instance # Если успешно, сохраняем экземпляр
-            print("✅ Telegraph готов.")
+            # Проверка доступности (опционально, но полезно)
+            # await to_thread(telegraph.get_account_info)
+            print("✅ Telegra.ph инициализирован.")
         except Exception as e:
             if tg_exceptions and isinstance(e, tg_exceptions.TelegraphException):
                 print(f"⚠️ Ошибка Telegraph (API/Сеть): {e}")
@@ -877,6 +888,7 @@ async def main():
 
     # 2. Планировщик
     # Запускаем задачу, передаём глобальный bot
+    scheduler = AsyncIOScheduler(timezone=TZ_INFO)
     scheduler.add_job(send_daily_update, "cron", hour=6, minute=0, args=[bot], timezone=TZ_INFO)
     scheduler.start()
 
@@ -888,10 +900,5 @@ async def main():
 if __name__ == "__main__":
     try:
         asyncio.run(main())
-    except KeyboardInterrupt:
-        print("🛑 Бот остановлен вручную.")
-    except RuntimeError as e:
-        if "No BOT_TOKEN" in str(e):
-            print(f"🛑 Ошибка запуска: {e}")
-        else:
-            raise
+    except (KeyboardInterrupt, SystemExit):
+        print("🛑 Бот остановлен.")
