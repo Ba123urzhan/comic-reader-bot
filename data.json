@@ -548,6 +548,13 @@
           "chapter_9": "Глава 9",
           "chapter_10": "Глава 10"
         }
+      },
+      "doctor-strange-annual": {
+        "title": "Доктор Стрэндж: Ежегодник",
+
+        "chapters": {
+          "chapter_1": "Глава 1"
+        }
       }
     }
   },
