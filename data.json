@@ -635,6 +635,12 @@
           "chapter_2": "Глава 2",
           "chapter_3": "Глава 3"
         }
+      },
+      "a-very-zombie-christmas": {
+        "title": "Ну очень... Зомби Рождество",
+        "chapters": {
+          "chapter_1": "Глава 1"
+        }
       }
     }
   }
