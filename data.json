@@ -551,7 +551,12 @@
       },
       "doctor-strange-annual": {
         "title": "Доктор Стрэндж: Ежегодник",
-
+        "chapters": {
+          "chapter_1": "Глава 1"
+        }
+      },
+      "a-year-of-marvels-july-infinite-comic": {
+        "title": "Год Чудес: Июльский Бесконечный Комикс",
         "chapters": {
           "chapter_1": "Глава 1"
         }
