@@ -662,6 +662,13 @@
         "chapters": {
           "chapter_1": "Глава 1"
         }
+      },
+      "a1": {
+        "title": "А1",
+        "chapters": {
+          "chapter_1": "Глава 1",
+          "chapter_2": "Глава 2"
+        }
       }
     }
   }
