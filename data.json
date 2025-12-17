@@ -669,6 +669,13 @@
           "chapter_1": "Глава 1",
           "chapter_2": "Глава 2"
         }
+      },
+      "ab-irato": {
+        "title": "Аб Ирато",
+        "chapters": {
+          "chapter_1": "Глава 1",
+          "chapter_2": "Глава 2"
+        }
       }
     }
   }
