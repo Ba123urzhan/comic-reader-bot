@@ -576,6 +576,12 @@
           "chapter_4": "Глава 4",
           "chapter_5": "Глава 5"
         }
+      },
+      "punisher-max-get-castle": {
+        "title": "Каратель МАКС: Убрать Касла",
+        "chapters": {
+          "chapter_1": "Глава 1"
+        }
       }
     }
   },
