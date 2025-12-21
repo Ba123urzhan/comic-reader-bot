@@ -736,6 +736,13 @@
           "chapter_31": "Глава 31",
           "chapter_32": "Глава 32"
         }
+      },
+      "abe-sapien-the-abyssal-plain": {
+        "title": "Эйб Сапиен: Глубинная Равнина",
+        "chapters": {
+          "chapter_1": "Глава 1",
+          "chapter_2": "Глава 2"
+        }
       }
     }
   }
