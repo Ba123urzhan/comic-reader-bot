@@ -609,6 +609,12 @@
           "chapter_4": "Глава 4",
           "chapter_5": "Глава 5"
         }
+      },
+      "free-comic-book-day-secret-wars": {
+        "title": "День Бесплатных Комиксов: Тайные Войны",
+        "chapters": {
+          "chapter_1": "Глава 1"
+        }
       }
     }
   },
