@@ -629,6 +629,16 @@
           "chapter_8": "Глава 8",
           "chapter_9": "Глава 9"
         }
+      },
+      "planet-hulk": {
+        "title": "Планета Халка",
+        "chapters": {
+          "chapter_1": "Глава 1",
+          "chapter_2": "Глава 2",
+          "chapter_3": "Глава 3",
+          "chapter_4": "Глава 4",
+          "chapter_5": "Глава 5"
+        }
       }
     }
   },
