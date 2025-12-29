@@ -810,6 +810,12 @@
           "chapter_4": "Глава 4",
           "chapter_5": "Глава 5"
         }
+      },
+      "abe-sapien-the-haunted-boy": {
+        "title": "Эйб Сапиен: Одержимый Мальчик",
+        "chapters": {
+          "chapter_1": "Глава 1"
+        }
       }
     }
   }
