@@ -816,6 +816,15 @@
         "chapters": {
           "chapter_1": "Глава 1"
         }
+      },
+      "abigail-and-the-snowman": {
+        "title": "Эбигейл и Снежный Человек",
+        "chapters": {
+          "chapter_1": "Глава 1",
+          "chapter_2": "Глава 2",
+          "chapter_3": "Глава 3",
+          "chapter_4": "Глава 4"
+        }
       }
     }
   }
