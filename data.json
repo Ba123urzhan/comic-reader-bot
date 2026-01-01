@@ -837,6 +837,12 @@
           "chapter_6": "Глава 6",
           "chapter_7": "Глава 7"
         }
+      },
+      "absolution-happy-kitty-special": {
+        "title": "Искупление: Счастливая Киса Спецвыпуск",
+        "chapters": {
+          "chapter_1": "Глава 1"
+        }
       }
     }
   }
