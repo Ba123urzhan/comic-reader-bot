@@ -655,6 +655,12 @@
         "chapters": {
           "chapter_1": "Глава 1"
         }
+      },
+      "action-force": {
+        "title": "Ударный Отряд",
+        "chapters": {
+          "chapter_1": "Глава 1"
+        }
       }
     }
   },
