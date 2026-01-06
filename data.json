@@ -884,6 +884,25 @@
           "chapter_13": "Глава 13",
           "chapter_14": "Глава 14"
         }
+      },
+      "action-philosophers": {
+        "title": "Крутые Философы!",
+        "chapters": {
+          "chapter_1": "Глава 1",
+          "chapter_2": "Глава 2",
+          "chapter_3": "Глава 3",
+          "chapter_4": "Глава 4",
+          "chapter_5": "Глава 5",
+          "chapter_6": "Глава 6",
+          "chapter_7": "Глава 7",
+          "chapter_8": "Глава 8",
+          "chapter_9": "Глава 9",
+          "chapter_10": "Глава 10",
+          "chapter_11": "Глава 11",
+          "chapter_12": "Глава 12",
+          "chapter_13": "Глава 13",
+          "chapter_14": "Глава 14"
+        }
       }
     }
   }
