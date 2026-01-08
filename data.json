@@ -926,6 +926,12 @@
           "chapter_13": "Глава 13",
           "chapter_14": "Глава 14"
         }
+      },
+      "star-wars-screaming-citadel": {
+        "title": "Звёздные Войны: Кричащая Цитадель",
+        "chapters": {
+          "chapter_1": "Глава 1"
+        }
       }
     }
   }
