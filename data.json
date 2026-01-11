@@ -722,6 +722,12 @@
           "chapter_10": "Глава 10",
           "chapter_11": "Глава 11"
         }
+      },
+      "punisher-annual": {
+        "title": "Каратель: Ежегодник",
+        "chapters": {
+          "chapter_1": "Глава 1"
+        }
       }
     }
   },
