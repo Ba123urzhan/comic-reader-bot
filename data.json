@@ -993,6 +993,12 @@
           "chapter_5": "Глава 5",
           "chapter_6": "Глава 6"
         }
+      },
+      "adventuretime2013summerspecial": {
+        "title": "Время Приключений: Летний Спецвыпуск 2013",
+        "chapters": {
+          "chapter_1": "Глава 1"
+        }
       }
     }
   }
