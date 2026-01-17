@@ -1012,6 +1012,13 @@
         "chapters": {
           "chapter_1": "Глава 1"
         }
+      },
+      "adrenalynn-weapon-of-war": {
+        "title": "Адреналинн: Оружие Войны",
+        "chapters": {
+          "chapter_1": "Глава 1",
+          "chapter_2": "Глава 2"
+        }
       }
     }
   }
