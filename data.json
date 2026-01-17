@@ -1006,6 +1006,12 @@
         "chapters": {
           "chapter_1": "Глава 1"
         }
+      },
+      "act1on-philosophers": {
+        "title": "Крутая Философия!",
+        "chapters": {
+          "chapter_1": "Глава 1"
+        }
       }
     }
   }
