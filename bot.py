@@ -814,75 +814,51 @@ async def process_search_query(message: types.Message, state: FSMContext):
         builder.row(types.InlineKeyboardButton(text="🏠 В главное меню", callback_data=MenuCallback(action="back").pack()))
         await message.answer(message_text, reply_markup=builder.as_markup(), parse_mode=ParseMode.MARKDOWN)
     else:
-        # ВОТ ЭТОГО КУСКА У ТЕБЯ НЕ ХВАТАЛО:
         await message.answer(
             f"❌ По запросу «{message.text}» ничего не найдено.",
             reply_markup=InlineKeyboardBuilder().row(
                 types.InlineKeyboardButton(text="🔍 Попробовать снова", callback_data=MenuCallback(action="search").pack()),
                 types.InlineKeyboardButton(text="🏠 В меню", callback_data=MenuCallback(action="back").pack())
-            ).as_markup()
+            ).as_markup(),
         )
 
+# --- Рассылка ---
 async def broadcast_new_comic(bot_obj: Bot, comic_title: str):
     users = await load_json_async(USERS_FILE) or []
     if not users: return 0
     count = 0
     text = f"🎉 <b>Новинка в библиотеке!</b>\n\nДобавлен комикс: <b>{comic_title}</b>"
-    markup = InlineKeyboardBuilder().row(types.InlineKeyboardButton(text="📚 В каталог", callback_data=MenuCallback(action="collections").pack())).as_markup()
+    builder = InlineKeyboardBuilder()
+    builder.row(types.InlineKeyboardButton(text="📚 Перейти в каталог", callback_data=MenuCallback(action="collections").pack()))
+
     for user_id in users:
         try:
-            await bot_obj.send_message(user_id, text, reply_markup=markup)
+            await bot_obj.send_message(user_id, text, reply_markup=builder.as_markup())
             count += 1
-            await asyncio.sleep(0.05) # Защита от спам-фильтра Telegram
-        except Exception: continue
+            await asyncio.sleep(0.05) 
+        except Exception as e:
+            print(f"Ошибка отправки {user_id}: {e}")
     return count
 
 @dp.message(Command("notify"))
 async def admin_notify_handler(message: types.Message):
-    # Замени ID на свой, если он другой
-    if message.from_user.id != 963741945: return 
+    # Твой ID администратора
+    if message.from_user.id != 1254414380: return 
     args = message.text.split(maxsplit=1)
     if len(args) < 2:
-        await message.answer("⚠️ Введите название: /notify Название")
+        await message.answer("⚠️ Используйте: /notify Название")
         return
-    status_msg = await message.answer(f"⏳ Начинаю рассылку...")
+    status_msg = await message.answer(f"⏳ Рассылка запущена...")
     count = await broadcast_new_comic(bot, args[1])
-    await status_msg.edit_text(f"✅ Рассылка завершена! Получили: {count} чел.")
+    await status_msg.edit_text(f"✅ Готово! Получили: {count} чел.")
 
-async def broadcast_new_comic(bot_obj: Bot, comic_title: str):
-    """Рассылка сообщения всем пользователям из users.json."""
-    users = await load_json_async(USERS_FILE) or []
-    if not users:
-        return 0
-    
-    count = 0
-    text = (
-        f"🎉 <b>Новинка в библиотеке!</b>\n\n"
-        f"Добавлен комикс: <b>{comic_title}</b>\n\n"
-        f"Скорее заходите в каталог, чтобы прочитать новые главы! 📚"
-    )
-    
-    markup = InlineKeyboardBuilder()
-    markup.row(types.InlineKeyboardButton(text="📚 Перейти в каталог", callback_data=MenuCallback(action="collections").pack()))
-
-    for user_id in users:
-        try:
-            await bot_obj.send_message(user_id, text, reply_markup=markup.as_markup())
-            count += 1
-            await asyncio.sleep(0.05) 
-        except Exception as e:
-            print(f"Ошибка отправки пользователю {user_id}: {e}")
-    return count
-
-@dp.message(Command("notify"))
+# --- Главная функция запуска ---
 async def main():
-    # 1. Инициализация Telegraph
     telegraph_to_save: Optional[Any] = None
 
     if TELEGRAPH_ENABLED and TELEGRAPH_AVAILABLE:
         try:
             telegraph_instance = Telegraph()
-            # Запускаем создание аккаунта в отдельном потоке (to_thread)
             await to_thread(telegraph_instance.create_account, short_name=COMICS_AUTHOR_NAME)
             telegraph_to_save = telegraph_instance
             print("✅ Telegraph готов.")
@@ -890,11 +866,9 @@ async def main():
             print(f"⚠️ Ошибка Telegraph: {e}")
             telegraph_to_save = None
     
-    # Передаем объект в диспетчер (исправляет "telegraph is not defined")
     dp.workflow_data["telegraph"] = telegraph_to_save
 
-    # 2. Запуск бота
-    print("🚀 Бот запущен! Команда для рассылки: /notify Название")
+    print("🚀 Бот запущен! Ошибок нет.")
     await dp.start_polling(bot, skip_updates=True)
 
 if __name__ == "__main__":
