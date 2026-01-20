@@ -461,7 +461,7 @@ async def start_handler(message: types.Message, state: FSMContext):
     await state.clear()
 
     text = (
-        "👋 **Добро пожаловать в EasyReaderBot!**\n\n"
+        "👋 **Добро пожаловать в @eeasychanel!**\n\n"
         "Я ваш проводник в мир комиксов. Используйте меню ниже, чтобы найти, прочитать или настроить уведомления о новинках."
     )
     markup = await get_main_menu_markup(message.from_user.id)
