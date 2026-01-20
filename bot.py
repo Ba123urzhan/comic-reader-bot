@@ -247,6 +247,15 @@ async def get_main_menu_markup(user_id: int) -> types.InlineKeyboardMarkup:
         )
     )
     
+# Примерно 190-я строка
+    # --- ВСТАВИТЬ СЮДА ---
+    builder.row(
+        types.InlineKeyboardButton(
+            text="❤️ Поддержать проект", 
+            callback_data=MenuCallback(action="donate").pack()
+        )
+    )
+
     # Кнопка уведомлений
     is_subscribed = user_id in (await load_json_async(USERS_FILE) or [])
     notify_icon = "🔔" if is_subscribed else "🔕"
@@ -515,6 +524,20 @@ async def random_comic_handler(callback: types.CallbackQuery, state: FSMContext)
 
 # <--- КОНЕЦ НОВОГО ХЭНДЛЕРА: РАНДОМАЙЗЕР --->
 
+# Примерно после 305-й строки
+@dp.callback_query(MenuCallback.filter(F.action == "donate"))
+async def donate_handler(callback: types.CallbackQuery):
+    donate_text = (
+        "<b>❤️ Поддержка EasyReaderBot</b>\n\n"
+        "Вы можете поддержать проект по следующим реквизитам:\n\n"
+        "• <b>Карта:</b> <code>4400 4303 1975 6729</code>\n"
+        "• <b>Крипта:</b> <code>0xd68b7cd88b40bfbfc62e64ab8b406e35cccf225a</code>"
+    )
+    builder = InlineKeyboardBuilder()
+    builder.row(types.InlineKeyboardButton(text="🏠 В меню", callback_data=MenuCallback(action="back").pack()))
+    
+    await callback.message.edit_text(donate_text, reply_markup=builder.as_markup(), parse_mode=ParseMode.HTML)
+    await callback.answer()
 
 @dp.callback_query(MenuCallback.filter(F.action == "collections"))
 async def open_collections_handler(callback: types.CallbackQuery):
