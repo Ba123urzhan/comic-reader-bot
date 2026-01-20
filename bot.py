@@ -531,7 +531,7 @@ async def donate_handler(callback: types.CallbackQuery):
         "<b>❤️ Поддержка EasyReaderBot</b>\n\n"
         "Вы можете поддержать проект по следующим реквизитам:\n\n"
         "• <b>Карта:</b> <code>4400 4303 1975 6729</code>\n"
-        "• <b>Крипта:</b> <code>0xd68b7cd88b40bfbfc62e64ab8b406e35cccf225a</code>"
+        "• <b>Крипта:</b> <code>TM5W6YDRTx7EQnSXB6bXvxPvq5YhwteXt5</code>"
     )
     builder = InlineKeyboardBuilder()
     builder.row(types.InlineKeyboardButton(text="🏠 В меню", callback_data=MenuCallback(action="back").pack()))
