@@ -9,7 +9,6 @@ import random
 from pathlib import Path
 from typing import Optional, List, Any
 from pytz import timezone
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiogram.filters.callback_data import CallbackData
 from asyncio import to_thread # Импорт для асинхронного запуска синхронных функций
 
@@ -779,7 +778,6 @@ async def start_search_handler(callback: types.CallbackQuery, state: FSMContext)
     )
     await callback.answer()
 
-
 @dp.message(SearchState.waiting_for_query)
 async def process_search_query(message: types.Message, state: FSMContext):
     query = message.text.lower().strip()
@@ -787,8 +785,8 @@ async def process_search_query(message: types.Message, state: FSMContext):
 
     if not query:
         await message.answer(
-            f"❌ Вы не ввели запрос. Попробуйте снова.",
-            reply_markup=InlineKeyboardBuilder().row(types.InlineKeyboardButton(text="🏠 В главное меню", callback_data=MenuCallback(action="back").pack())).as_markup(),
+            "❌ Вы не ввели запрос. Попробуйте снова.",
+            reply_markup=InlineKeyboardBuilder().row(types.InlineKeyboardButton(text="🏠 В меню", callback_data=MenuCallback(action="back").pack())).as_markup(),
         )
         return
 
@@ -796,125 +794,111 @@ async def process_search_query(message: types.Message, state: FSMContext):
     found_comics = []
 
     if all_data:
-        # 1. Проходим по всем коллекциям
         for collection_key, collection_data in all_data.items():
             comics_in_collection = collection_data.get("comics", {})
-
-            # 2. Проходим по всем комиксам в коллекции
             for comic_key, comic_data in comics_in_collection.items():
                 title = comic_data.get("title", comic_key)
-
-                # 3. Проверяем, соответствует ли заголовок запросу
                 if query in title.lower():
                     found_comics.append({"title": title, "collection_key": collection_key, "comic_key": comic_key})
 
     if found_comics:
         builder = InlineKeyboardBuilder()
-        message_text = f"✅ **Найдено {len(found_comics)} совпадений** по запросу «{message.text}»:\n\n"
-
-        # Сортируем найденные комиксы по названию
+        message_text = f"✅ **Найдено {len(found_comics)} совпадений**:\n"
         found_comics.sort(key=lambda x: x["title"])
 
         for item in found_comics:
-            builder.row(
-                types.InlineKeyboardButton(
-                    text=f"📜 {item['title']}",
-                    callback_data=ComicCallback(collection_key=item["collection_key"], comic_key=item["comic_key"], action="open", page=1).pack(),
-                )
-            )
-
+            builder.row(types.InlineKeyboardButton(
+                text=f"📜 {item['title']}",
+                callback_data=ComicCallback(collection_key=item["collection_key"], comic_key=item["comic_key"], action="open", page=1).pack()
+            ))
         builder.row(types.InlineKeyboardButton(text="🏠 В главное меню", callback_data=MenuCallback(action="back").pack()))
-
         await message.answer(message_text, reply_markup=builder.as_markup(), parse_mode=ParseMode.MARKDOWN)
     else:
+        # ВОТ ЭТОГО КУСКА У ТЕБЯ НЕ ХВАТАЛО:
         await message.answer(
-            f"❌ Комиксы по запросу «**{message.text}**» не найдены. Попробуйте ввести часть названия.",
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=InlineKeyboardBuilder().row(types.InlineKeyboardButton(text="🏠 В главное меню", callback_data=MenuCallback(action="back").pack())).as_markup(),
+            f"❌ По запросу «{message.text}» ничего не найдено.",
+            reply_markup=InlineKeyboardBuilder().row(
+                types.InlineKeyboardButton(text="🔍 Попробовать снова", callback_data=MenuCallback(action="search").pack()),
+                types.InlineKeyboardButton(text="🏠 В меню", callback_data=MenuCallback(action="back").pack())
+            ).as_markup()
         )
 
+async def broadcast_new_comic(bot_obj: Bot, comic_title: str):
+    users = await load_json_async(USERS_FILE) or []
+    if not users: return 0
+    count = 0
+    text = f"🎉 <b>Новинка в библиотеке!</b>\n\nДобавлен комикс: <b>{comic_title}</b>"
+    markup = InlineKeyboardBuilder().row(types.InlineKeyboardButton(text="📚 В каталог", callback_data=MenuCallback(action="collections").pack())).as_markup()
+    for user_id in users:
+        try:
+            await bot_obj.send_message(user_id, text, reply_markup=markup)
+            count += 1
+            await asyncio.sleep(0.05) # Защита от спам-фильтра Telegram
+        except Exception: continue
+    return count
 
-# --- Планировщик и ежедневные уведомления (Улучшенный UI) ---
+@dp.message(Command("notify"))
+async def admin_notify_handler(message: types.Message):
+    # Замени ID на свой, если он другой
+    if message.from_user.id != 963741945: return 
+    args = message.text.split(maxsplit=1)
+    if len(args) < 2:
+        await message.answer("⚠️ Введите название: /notify Название")
+        return
+    status_msg = await message.answer(f"⏳ Начинаю рассылку...")
+    count = await broadcast_new_comic(bot, args[1])
+    await status_msg.edit_text(f"✅ Рассылка завершена! Получили: {count} чел.")
 
-
-async def send_daily_update(bot_obj: Bot):
-    """Ежедневно отправляет уведомление о новых комиксах всем подписчикам."""
-
+async def broadcast_new_comic(bot_obj: Bot, comic_title: str):
+    """Рассылка сообщения всем пользователям из users.json."""
     users = await load_json_async(USERS_FILE) or []
     if not users:
-        print("INFO: Нет подписчиков для отправки ежедневного обновления.")
-        return
-
-    update_message = (
-        "✨ **Ежедневное обновление комиксов!**\n\n"
-        "📖 Не пропустите новые главы в вашей любимой коллекции! Нажмите кнопку ниже, чтобы перейти к чтению."
+        return 0
+    
+    count = 0
+    text = (
+        f"🎉 <b>Новинка в библиотеке!</b>\n\n"
+        f"Добавлен комикс: <b>{comic_title}</b>\n\n"
+        f"Скорее заходите в каталог, чтобы прочитать новые главы! 📚"
     )
-
-    markup = await get_collections_markup() # Получаем клавиатуру коллекций, она же ведет в главное меню
+    
+    markup = InlineKeyboardBuilder()
+    markup.row(types.InlineKeyboardButton(text="📚 Перейти в каталог", callback_data=MenuCallback(action="collections").pack()))
 
     for user_id in users:
         try:
-            await bot_obj.send_message(chat_id=user_id, text=update_message, reply_markup=markup, parse_mode=ParseMode.MARKDOWN)
+            await bot_obj.send_message(user_id, text, reply_markup=markup.as_markup())
+            count += 1
+            await asyncio.sleep(0.05) 
         except Exception as e:
-            # Сюда попадаем, если пользователь заблокировал бота
-            print(f"⚠️ Не удалось отправить сообщение пользователю {user_id} (вероятно, заблокировал): {e}")
+            print(f"Ошибка отправки пользователю {user_id}: {e}")
+    return count
 
-    print(f"✅ Ежедневное обновление отправлено {len(users)} подписчикам.")
-
-
-# --- Главная функция запуска ---
-
-
+@dp.message(Command("notify"))
 async def main():
-    # 1. Планировщик и Telegraph
-    scheduler = AsyncIOScheduler(timezone=TZ_INFO)
-    telegraph: Optional[Any] = None
+    # 1. Инициализация Telegraph
+    telegraph_to_save: Optional[Any] = None
 
     if TELEGRAPH_ENABLED and TELEGRAPH_AVAILABLE:
-        # Инициализация и создание аккаунта с to_thread
-        telegraph_instance = Telegraph() # Создаем синхронный экземпляр
         try:
-            # Запускаем синхронный метод в отдельном потоке
-            await to_thread(
-                telegraph_instance.create_account, 
-                short_name=COMICS_AUTHOR_NAME
-            )
-            telegraph = telegraph_instance # Если успешно, сохраняем экземпляр
+            telegraph_instance = Telegraph()
+            # Запускаем создание аккаунта в отдельном потоке (to_thread)
+            await to_thread(telegraph_instance.create_account, short_name=COMICS_AUTHOR_NAME)
+            telegraph_to_save = telegraph_instance
             print("✅ Telegraph готов.")
         except Exception as e:
-            if tg_exceptions and isinstance(e, tg_exceptions.TelegraphException):
-                print(f"⚠️ Ошибка Telegraph (API/Сеть): {e}")
-            else:
-                print(f"⚠️ Неизвестная ошибка при инициализации Telegraph: {e}")
-            telegraph = None
-            print("❌ Telegra.ph отключен из-за ошибки инициализации. **Прямые ссылки отправляться не будут.**")
-    else:
-        if TELEGRAPH_ENABLED and not TELEGRAPH_AVAILABLE:
-            print("⚠️ Библиотека 'telegraph' не найдена. (ImportError). Установлена синхронная версия. **Прямые ссылки отправляться не будут.**")
-        elif not TELEGRAPH_ENABLED:
-            print("⚠️ Telegra.ph отключен в .env. **Прямые ссылки отправляться не будут.**")
+            print(f"⚠️ Ошибка Telegraph: {e}")
+            telegraph_to_save = None
+    
+    # Передаем объект в диспетчер (исправляет "telegraph is not defined")
+    dp.workflow_data["telegraph"] = telegraph_to_save
 
-
-    # Сохраняем объект Telegraph (или None) в диспетчере для доступа из хэндлеров
-    dp.workflow_data["telegraph"] = telegraph
-
-    # 2. Планировщик
-    # Запускаем задачу, передаём глобальный bot
-    scheduler.add_job(send_daily_update, "cron", hour=6, minute=0, args=[bot], timezone=TZ_INFO)
-    scheduler.start()
-
-    # 3. Запуск бота
-    print("🤖 Бот запущен.")
+    # 2. Запуск бота
+    print("🚀 Бот запущен! Команда для рассылки: /notify Название")
     await dp.start_polling(bot, skip_updates=True)
-
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
-    except KeyboardInterrupt:
-        print("🛑 Бот остановлен вручную.")
-    except RuntimeError as e:
-        if "No BOT_TOKEN" in str(e):
-            print(f"🛑 Ошибка запуска: {e}")
-        else:
-            raise
+    except (KeyboardInterrupt, SystemExit):
+        print("🤖 Бот остановлен.")
