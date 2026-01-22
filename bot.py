@@ -459,6 +459,12 @@ async def get_chapter_buttons_markup(collection_key: str, comic_key: str, page: 
 async def start_handler(message: types.Message, state: FSMContext):
     await state.clear()
 
+    user_id = message.from_user.id
+    users = await load_json_async(USERS_FILE) or []
+    if user_id not in users:
+        users.append(user_id)
+        await save_json_async(USERS_FILE, users)
+
     text = (
         "👋 **Добро пожаловать в @eeasychanel!**\n\n"
         "Я ваш проводник в мир комиксов. Используйте меню ниже, чтобы найти, прочитать или настроить уведомления о новинках."
