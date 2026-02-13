@@ -913,6 +913,14 @@
           "chapter_23": "#23",
           "chapter_24": "#24"
         }
+      },
+      "earth-worm-jim": {
+        "title": "Червяк Джим",
+        "chapters": {
+          "chapter_1": "#1",
+          "chapter_2": "#2",
+          "chapter_3": "#3"
+        }
       }
     }
   }
