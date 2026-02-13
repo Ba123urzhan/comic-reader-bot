@@ -866,6 +866,18 @@
           "chapter_211": "#211",
           "chapter_212": "#212"
         }
+      },
+      "civil-war": {
+        "title": "Гражданская война",
+        "chapters": {
+          "chapter_1": "#1",
+          "chapter_2": "#2",
+          "chapter_3": "#3",
+          "chapter_4": "#4",
+          "chapter_5": "#5",
+          "chapter_6": "#6",
+          "chapter_7": "#7"
+        }
       }
     }
   },
