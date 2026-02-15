@@ -886,6 +886,12 @@
           "chapter_2": "#2",
           "chapter_3": "#3"
         }
+      },
+      "captain-america": {
+        "title": "Капитан Америка",
+        "chapters": {
+          "chapter_1": "#1"
+        }
       }
     }
   },
