@@ -927,6 +927,25 @@
           "chapter_23": "#23",
           "chapter_24": "#24"
         }
+      },
+      "battle-pope": {
+        "title": "Боевой Папа",
+        "chapters": {
+          "chapter_1": "#1",
+          "chapter_2": "#2",
+          "chapter_3": "#3",
+          "chapter_4": "#4",
+          "chapter_5": "#5",
+          "chapter_6": "#6",
+          "chapter_7": "#7",
+          "chapter_8": "#8",
+          "chapter_9": "#9",
+          "chapter_10": "#10",
+          "chapter_11": "#11",
+          "chapter_12": "#12",
+          "chapter_13": "#13",
+          "chapter_14": "#14"
+        }
       }
     }
   }
