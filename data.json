@@ -8,6 +8,15 @@
         "chapters": {
           "chapter_1": "#1"
         }
+      },
+      "superman-and-bugs-bunny": {
+        "title": "Супермен и Багз Банни",
+        "chapters": {
+          "chapter_1": "#1",
+          "chapter_2": "#2",
+          "chapter_3": "#3",
+          "chapter_4": "#4"
+        }
       }
     }
   },
