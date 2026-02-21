@@ -901,6 +901,17 @@
         "chapters": {
           "chapter_1": "#1"
         }
+      },
+      "wolverine-the-end": {
+        "title": "Росомаха - конец",
+        "chapters": {
+          "chapter_1": "#1",
+          "chapter_2": "#2",
+          "chapter_3": "#3",
+          "chapter_4": "#4",
+          "chapter_5": "#5",
+          "chapter_6": "#6"
+        }
       }
     }
   },
@@ -954,6 +965,15 @@
           "chapter_12": "#12",
           "chapter_13": "#13",
           "chapter_14": "#14"
+        }
+      },
+      "army-of-darkness-ashes-2-ashes": {
+        "title": "Армия тьмы: Прах к праху",
+        "chapters": {
+          "chapter_1": "#1",
+          "chapter_2": "#2",
+          "chapter_3": "#3",
+          "chapter_4": "#4"
         }
       }
     }
